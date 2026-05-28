@@ -2,21 +2,22 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Allocate more memory for the build process
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build --configuration=production
+RUN npm run build -- --configuration=production
+
+# Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Copy your custom nginx configuration
+RUN rm -rf /usr/share/nginx/html/*
+
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy your LOCALLY built files straight into the Nginx directory
-COPY --from=build /app/dist/my-app /usr/share/nginx/html
+COPY --from=build /app/dist/myapp/browser /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
